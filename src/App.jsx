@@ -3,16 +3,16 @@ import { CourierPage } from './pages/CourierPage';
 
 /**
  * Marshrutlash juda oddiy — chunki bu ilovaning DEYARLI BUTUN
- * mazmuni bitta sahifada: /t/:token.
+ * mazmuni bitta sahifada: /k/:token.
  *
- * Login sahifasi YO'Q — kuryer botdan olgan havolani bosib
- * to'g'ridan-to'g'ri shu yerga tushadi.
+ * Login sahifasi YO'Q — kuryer Telegram/WhatsApp orqali kelgan
+ * havolani bosib to'g'ridan-to'g'ri shu yerga tushadi.
  */
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/t/:token" element={<CourierPage />} />
+        <Route path="/k/:token" element={<CourierPage />} />
         <Route path="/" element={<Landing />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
