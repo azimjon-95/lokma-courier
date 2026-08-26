@@ -114,70 +114,201 @@ export function CourierPage() {
 
   return (
     <div className="courier-page">
+
+      {/* ═══ SARLAVHA ═══
+          Kuryer uchun eng muhim ikki raqam: yetkazish haqi
+          (uning daromadi) va mijozdan olinadigan summa.
+          Ilgari faqat buyurtma jami ko'rinardi — u esa
+          kuryerga hech narsa aytmasdi. */}
       <header className="cp-header">
-        <div className="cp-header__badge">{isMine ? 'Sizga biriktirilgan' : 'Yangi taklif'}</div>
-        <div className="cp-header__total">{som(o.total)} so'm</div>
+        <div className="cp-header__top">
+          <span className={`cp-badge ${isMine ? 'is-mine' : ''}`}>
+            {isMine ? 'Sizga biriktirilgan' : 'Yangi taklif'}
+          </span>
+          {o.orderCode && <span className="cp-code">#{o.orderCode}</span>}
+        </div>
+
+        <div className="cp-earn">
+          <div className="cp-earn__main">
+            <span className="cp-earn__label">Yetkazish haqi</span>
+            <b>{som(o.deliveryFee)}<i>so‘m</i></b>
+          </div>
+          {km != null && (
+            <div className="cp-earn__km">
+              <span>{km}</span><i>km</i>
+            </div>
+          )}
+        </div>
       </header>
 
-      <div className="cp-card">
-        <div className="cp-card__label">RESTORAN</div>
-        <div className="cp-card__title">{o.restaurantName}</div>
-        {o.restaurantAddress && <div className="cp-card__sub">{o.restaurantAddress}</div>}
-        {o.restaurantLat && (
-          <a href={mapUrl(o.restaurantLat, o.restaurantLng, o.restaurantName)}
-            target="_blank" rel="noreferrer" className="cp-map-btn">
-            🗺️ Xaritada ko'rish
-          </a>
+      {/* ═══ PUL YIG'ISH ═══
+          Alohida va ko'zga tashlanadigan qilib berilgan:
+          kuryer mijoz eshigida turib "pul olamanmi?" degan
+          savolga darhol javob topishi kerak. */}
+      <div className={`cp-pay ${o.isPaid ? 'is-paid' : 'is-cash'}`}>
+        {o.isPaid ? (
+          <>
+            <span className="cp-pay__icon">✓</span>
+            <div>
+              <b>To‘langan</b>
+              <span>Mijozdan pul olinmaydi</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <span className="cp-pay__icon">💵</span>
+            <div>
+              <b>{som(o.collectAmount || o.total)} so‘m</b>
+              <span>Mijozdan naqd olinadi</span>
+            </div>
+          </>
         )}
       </div>
 
-      <div className="cp-arrow">↓{km != null && <span className="cp-arrow__km">{km} km</span>}</div>
+      {/* ═══ MARSHRUT ═══ */}
+      <div className="cp-route">
+        <Point
+          step="1"
+          label="OLIB KETISH"
+          title={o.restaurantName}
+          sub={o.restaurantAddress}
+          lat={o.restaurantLat}
+          lng={o.restaurantLng}
+          phone={o.restaurantPhone}
+        />
 
-      <div className="cp-card">
-        <div className="cp-card__label">MIJOZ</div>
-        <div className="cp-card__title">{o.addressLabel || 'Manzil'}</div>
-        {isMine && o.addressNote && <div className="cp-card__sub">{o.addressNote}</div>}
-        {isMine && o.lat && (
-          <a href={mapUrl(o.lat, o.lng, o.addressLabel)}
-            target="_blank" rel="noreferrer" className="cp-map-btn">
-            🗺️ Xaritada ko'rish
-          </a>
-        )}
-        {isMine && o.customerPhone && (
-          <a href={telUrl(o.customerPhone)} className="cp-call-btn">
-            📞 {o.customerPhone}
-          </a>
-        )}
-        {!isMine && (
-          <p className="cp-card__hint">Aniq manzil qabul qilgandan keyin ko'rinadi</p>
-        )}
+        <div className="cp-route__line">
+          {km != null && <span>{km} km</span>}
+        </div>
+
+        <Point
+          step="2"
+          label="YETKAZISH"
+          title={o.addressLabel || 'Manzil'}
+          sub={isMine ? o.addressNote : null}
+          lat={isMine ? o.lat : null}
+          lng={isMine ? o.lng : null}
+          phone={isMine ? o.customerPhone : null}
+          person={isMine ? o.customerName : null}
+          username={isMine ? o.customerUsername : null}
+          locked={!isMine}
+        />
       </div>
 
-      <div className="cp-card cp-card--items">
+      {/* ═══ TAOMLAR ═══
+          Ro'yxat sifatida: kuryer restoranda nechta nima
+          olayotganini sanab tekshiradi. Ilgari bitta uzun
+          qator edi va ajratib bo'lmasdi. */}
+      <div className="cp-card">
         <div className="cp-card__label">TAOMLAR</div>
-        <div className="cp-card__items">{o.itemsSummary}</div>
+        {o.items?.length ? (
+          <ul className="cp-items">
+            {o.items.map((it, i) => (
+              <li key={i}>
+                <span className="cp-items__qty">{it.quantity}×</span>
+                <span className="cp-items__name">{it.name}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="cp-card__sub">{o.itemsSummary}</div>
+        )}
+
+        {o.note && (
+          <div className="cp-note">
+            <b>Izoh:</b> {o.note}
+          </div>
+        )}
       </div>
 
+      {/* ═══ AMAL ═══ */}
       <div className="cp-footer">
         {!isMine ? (
-          <button className="cp-btn cp-btn--primary" onClick={handleAccept} disabled={accepting}>
-            {accepting ? 'Yuborilmoqda...' : "\u2713 Qabul qilaman"}
-          </button>
+          <>
+            <button className="cp-btn cp-btn--primary" onClick={handleAccept} disabled={accepting}>
+              {accepting ? 'Yuborilmoqda...' : '✓ Qabul qilaman'}
+            </button>
+            <p className="cp-footer__hint">
+              Birinchi qabul qilgan kuryer oladi
+            </p>
+          </>
         ) : !showDeliverConfirm ? (
           <button className="cp-btn cp-btn--primary" onClick={() => setShowDeliverConfirm(true)}>
-            {'\ud83d\udce6 Topshirdim'}
+            📦 Topshirdim
           </button>
         ) : (
           <div className="cp-confirm">
-            <p>Topshirdingizmi?</p>
+            <p>
+              {o.isPaid
+                ? 'Buyurtmani topshirdingizmi?'
+                : `${som(o.collectAmount || o.total)} so‘m oldingizmi?`}
+            </p>
             <div className="cp-confirm__row">
               <button className="cp-btn cp-btn--ghost" onClick={() => setShowDeliverConfirm(false)} disabled={delivering}>
-                Yo'q
+                Yo‘q
               </button>
               <button className="cp-btn cp-btn--primary" onClick={handleDeliver} disabled={delivering}>
                 {delivering ? '...' : 'Ha, topshirdim'}
               </button>
             </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Marshrut nuqtasi — olib ketish yoki yetkazish.
+ *
+ * Navigatsiya va qo'ng'iroq tugmalari BIR JOYDA: kuryer
+ * moto ustida, bir qo'li band. Har amal katta va aniq
+ * bo'lishi kerak, qidirib o'tirmasin.
+ */
+function Point({ step, label, title, sub, lat, lng, phone, person, username, locked }) {
+  return (
+    <div className={`cp-point ${locked ? 'is-locked' : ''}`}>
+      <div className="cp-point__step">{step}</div>
+
+      <div className="cp-point__body">
+        <div className="cp-point__label">{label}</div>
+        <div className="cp-point__title">{title}</div>
+        {sub && <div className="cp-point__sub">{sub}</div>}
+
+        {person && (
+          <div className="cp-point__person">
+            {person}
+            {username && (
+              <a
+                href={`https://t.me/${username}`}
+                target="_blank"
+                rel="noreferrer"
+                className="cp-tg"
+              >
+                @{username}
+              </a>
+            )}
+          </div>
+        )}
+
+        {locked && (
+          <div className="cp-point__lock">
+            🔒 Aniq manzil, telefon va xarita qabul qilgandan keyin
+          </div>
+        )}
+
+        {(lat || phone) && (
+          <div className="cp-point__actions">
+            {lat && lng && (
+              <a href={mapUrl(lat, lng, title)} target="_blank" rel="noreferrer" className="cp-act cp-act--map">
+                🧭 Yo‘l ko‘rsatish
+              </a>
+            )}
+            {phone && (
+              <a href={telUrl(phone)} className="cp-act cp-act--call">
+                📞 Qo‘ng‘iroq
+              </a>
+            )}
           </div>
         )}
       </div>
