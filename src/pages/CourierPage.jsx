@@ -128,17 +128,37 @@ export function CourierPage() {
           {o.orderCode && <span className="cp-code">#{o.orderCode}</span>}
         </div>
 
-        <div className="cp-earn">
-          <div className="cp-earn__main">
-            <span className="cp-earn__label">Yetkazish haqi</span>
-            <b>{som(o.deliveryFee)}<i>so‘m</i></b>
+        {/*
+          Yetkazish haqi 0 bo'lsa BLOK KO'RSATILMAYDI.
+
+          "Yetkazish haqi: 0 so'm" katta harflarda turishi
+          kuryerga "bu ish bepul" degan taassurot beradi va
+          buyurtmani rad etishga undaydi. Aslida 0 ko'pincha
+          "haq restoran bilan alohida kelishilgan" degani.
+
+          Masofa esa foydali — u alohida qoladi.
+        */}
+        {(o.deliveryFee > 0 || km != null) && (
+          <div className="cp-earn">
+            {o.deliveryFee > 0 ? (
+              <div className="cp-earn__main">
+                <span className="cp-earn__label">Yetkazish haqi</span>
+                <b>{som(o.deliveryFee)}<i>so‘m</i></b>
+              </div>
+            ) : (
+              <div className="cp-earn__main">
+                <span className="cp-earn__label">Buyurtma</span>
+                <b className="cp-earn__plain">{som(o.total)}<i>so‘m</i></b>
+              </div>
+            )}
+
+            {km != null && (
+              <div className="cp-earn__km">
+                <span>{km}</span><i>km</i>
+              </div>
+            )}
           </div>
-          {km != null && (
-            <div className="cp-earn__km">
-              <span>{km}</span><i>km</i>
-            </div>
-          )}
-        </div>
+        )}
       </header>
 
       {/* ═══ PUL YIG'ISH ═══
@@ -172,6 +192,7 @@ export function CourierPage() {
           label="OLIB KETISH"
           title={o.restaurantName}
           sub={o.restaurantAddress}
+          address={o.restaurantAddress}
           lat={o.restaurantLat}
           lng={o.restaurantLng}
           phone={o.restaurantPhone}
@@ -186,6 +207,13 @@ export function CourierPage() {
           label="YETKAZISH"
           title={o.addressLabel || 'Manzil'}
           sub={isMine ? o.addressNote : null}
+          /*
+            Xaritaga TO'LIQ manzil beriladi, qisqartirilgani
+            emas: "Uy — улица Каховка, 16 к1" dagi "Uy —"
+            qismi qidiruvni chalg'itadi, shuning uchun uni
+            olib tashlaymiz.
+          */
+          address={isMine ? String(o.addressLabel || '').replace(/^[^—]*—\s*/, '') : null}
           lat={isMine ? o.lat : null}
           lng={isMine ? o.lng : null}
           phone={isMine ? o.customerPhone : null}
@@ -265,7 +293,14 @@ export function CourierPage() {
  * moto ustida, bir qo'li band. Har amal katta va aniq
  * bo'lishi kerak, qidirib o'tirmasin.
  */
-function Point({ step, label, title, sub, lat, lng, phone, person, username, locked }) {
+function Point({ step, label, title, sub, lat, lng, phone, person, username, locked, address }) {
+  /*
+   * Navigatsiya uchun eng aniq ma'lumot: koordinata bo'lsa u,
+   * bo'lmasa to'liq manzil matni. `address` — mijoz kiritgan
+   * manzil, `title` esa qisqartirilgan ko'rinishi.
+   */
+  const nav = locked ? null : mapUrl(lat, lng, address || title);
+
   return (
     <div className={`cp-point ${locked ? 'is-locked' : ''}`}>
       <div className="cp-point__step">{step}</div>
@@ -297,10 +332,19 @@ function Point({ step, label, title, sub, lat, lng, phone, person, username, loc
           </div>
         )}
 
-        {(lat || phone) && (
+        {/*
+          Navigatsiya havolasi koordinatasiz ham yasaladi —
+          manzil matni bo'yicha (maps.js da). Shuning uchun
+          shart `lat` emas, `nav` ning o'zi tekshiriladi.
+
+          Ilgari koordinatasiz buyurtmada tugma umuman
+          chiqmasdi va kuryer manzilni qo'lda ko'chirishga
+          majbur bo'lardi.
+        */}
+        {(nav || phone) && (
           <div className="cp-point__actions">
-            {lat && lng && (
-              <a href={mapUrl(lat, lng, title)} target="_blank" rel="noreferrer" className="cp-act cp-act--map">
+            {nav && (
+              <a href={nav} target="_blank" rel="noreferrer" className="cp-act cp-act--map">
                 🧭 Yo‘l ko‘rsatish
               </a>
             )}

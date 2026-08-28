@@ -7,9 +7,30 @@
  * (yandex.uz/maps veb-versiyasi ham ishlaydi).
  */
 export function mapUrl(lat, lng, label = '') {
-  if (!lat || !lng) return null;
-  const query = label ? `?text=${encodeURIComponent(label)}&ll=${lng},${lat}` : `?ll=${lng},${lat}&z=16`;
-  return `https://yandex.uz/maps${query}`;
+  /*
+   * KOORDINATA BO'LMASA MANZIL MATNI ISHLATILADI.
+   *
+   * Ilgari koordinatasiz `null` qaytarilardi va kuryerda
+   * "Yo'l ko'rsatish" tugmasi UMUMAN chiqmasdi — u manzilni
+   * qo'lda ko'chirib, xaritaga o'zi yozishi kerak edi.
+   *
+   * Koordinata har doim ham bo'lmaydi: mijoz manzilni xaritadan
+   * emas, qo'lda yozgan bo'lishi mumkin. Bunday holatda Yandex
+   * matn bo'yicha qidiradi — aniqlik pastroq, lekin kuryer
+   * hech bo'lmasa ko'chani topadi.
+   */
+  if (lat && lng) {
+    const q = label
+      ? `?text=${encodeURIComponent(label)}&ll=${lng},${lat}&z=17`
+      : `?ll=${lng},${lat}&z=17`;
+    return `https://yandex.uz/maps${q}`;
+  }
+
+  if (label && label.trim()) {
+    return `https://yandex.uz/maps/?text=${encodeURIComponent(label.trim())}`;
+  }
+
+  return null;
 }
 
 /** Ikki nuqta orasidagi masofa (taxminiy, km) — Haversine formulasi. */
