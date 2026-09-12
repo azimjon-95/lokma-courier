@@ -1,41 +1,66 @@
-/**
- * Xarita havolasi — koordinata bo'yicha.
+/*
+ * ═══════════════════════════════════════════════════════════
+ * XARITA HAVOLALARI — GOOGLE MAPS
+ * ═══════════════════════════════════════════════════════════
  *
- * Yandex Xaritalar tanlangan (O'zbekistonda eng ko'p ishlatiladigan
- * navigatsiya xizmati), lekin agar telefon Yandex ilovasini
- * ochib bera olmasa, brauzer o'zi mos xizmatga yo'naltiradi
- * (yandex.uz/maps veb-versiyasi ham ishlaydi).
+ * NIMA UCHUN GOOGLE, YANDEX EMAS:
+ * Yandex O'zbekiston qishloqlari va yangi mahallalarini to'liq
+ * qamrab olmaydi — kuryer manzilni topa olmay qolardi. Google
+ * bu hududlarda ancha to'liq.
+ *
+ * NIMA UCHUN MANZIL MATNI EMAS, KOORDINATA:
+ * "Uy — 18, xon. 6" kabi matnni xarita butunlay boshqa shaharda
+ * topib berardi (Moskvadagi ko'chani ko'rsatgan holat bo'lgan).
+ * Koordinata bo'lsa matn UMUMAN ishlatilmaydi — xarita aniq
+ * nuqtaga boradi.
+ *
+ * Google Maps URL API hujjati:
+ * https://developers.google.com/maps/documentation/urls/get-started
  */
-export function mapUrl(lat, lng, label = '') {
-  /*
-   * KOORDINATA BO'LMASA MANZIL MATNI ISHLATILADI.
-   *
-   * Ilgari koordinatasiz `null` qaytarilardi va kuryerda
-   * "Yo'l ko'rsatish" tugmasi UMUMAN chiqmasdi — u manzilni
-   * qo'lda ko'chirib, xaritaga o'zi yozishi kerak edi.
-   *
-   * Koordinata har doim ham bo'lmaydi: mijoz manzilni xaritadan
-   * emas, qo'lda yozgan bo'lishi mumkin. Bunday holatda Yandex
-   * matn bo'yicha qidiradi — aniqlik pastroq, lekin kuryer
-   * hech bo'lmasa ko'chani topadi.
-   */
-  if (lat && lng) {
-    const q = label
-      ? `?text=${encodeURIComponent(label)}&ll=${lng},${lat}&z=17`
-      : `?ll=${lng},${lat}&z=17`;
-    return `https://yandex.uz/maps${q}`;
+
+/** Koordinata haqiqiy sonmi (0 ham to'g'ri qiymat bo'lishi mumkin). */
+function isCoord(v) {
+  return Number.isFinite(Number(v)) && Number(v) !== 0;
+}
+
+export function hasCoords(lat, lng) {
+  return isCoord(lat) && isCoord(lng);
+}
+
+/**
+ * Navigatsiya havolasi — MARSHRUT chizib beradi (yo'l chizig'i bilan).
+ *
+ * @param {object} to    Manzil: { lat, lng, address }
+ * @param {object} [from] Boshlanish nuqtasi: { lat, lng }.
+ *   Berilmasa — Google foydalanuvchining JORIY joylashuvidan
+ *   boshlab chizadi (kuryer uchun odatda shu kerak).
+ *
+ * Qaytaradi: URL yoki null (hech qanday ma'lumot bo'lmasa).
+ */
+export function navUrl(to = {}, from = null) {
+  const params = new URLSearchParams({ api: '1', travelmode: 'driving' });
+
+  if (hasCoords(to.lat, to.lng)) {
+    // Aniq nuqta — matn qo'shilmaydi, aks holda qidiruv chalg'itadi
+    params.set('destination', `${Number(to.lat)},${Number(to.lng)}`);
+  } else if (to.address && String(to.address).trim()) {
+    // Koordinata yo'q (mijoz manzilni qo'lda yozgan) — matn bo'yicha
+    params.set('destination', String(to.address).trim());
+  } else {
+    return null;
   }
 
-  if (label && label.trim()) {
-    return `https://yandex.uz/maps/?text=${encodeURIComponent(label.trim())}`;
+  if (from && hasCoords(from.lat, from.lng)) {
+    params.set('origin', `${Number(from.lat)},${Number(from.lng)}`);
   }
 
-  return null;
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
 /** Ikki nuqta orasidagi masofa (taxminiy, km) — Haversine formulasi. */
 export function distanceKm(lat1, lng1, lat2, lng2) {
-  if (!lat1 || !lng1 || !lat2 || !lng2) return null;
+  // Ilgari `!lat1` tekshirilardi — bu 0 koordinatani ham rad etardi
+  if (!hasCoords(lat1, lng1) || !hasCoords(lat2, lng2)) return null;
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../lib/api';
-import { mapUrl, distanceKm, telUrl } from '../lib/maps';
+import { navUrl, distanceKm, telUrl } from '../lib/maps';
 import './CourierPage.css';
 
 const som = (n) => (n ?? 0).toLocaleString('ru-RU').replace(/,/g, ' ');
@@ -187,14 +187,17 @@ export function CourierPage() {
 
       {/* ═══ MARSHRUT ═══ */}
       <div className="cp-route">
+        {/*
+          1-nuqta: marshrut KURYERNING JORIY joylashuvidan
+          restoranga chiziladi (`from` berilmaydi — Google
+          telefonning GPS'idan boshlaydi).
+        */}
         <Point
           step="1"
           label="OLIB KETISH"
           title={o.restaurantName}
           sub={o.restaurantAddress}
-          address={o.restaurantAddress}
-          lat={o.restaurantLat}
-          lng={o.restaurantLng}
+          to={{ lat: o.restaurantLat, lng: o.restaurantLng, address: o.restaurantAddress }}
           phone={o.restaurantPhone}
         />
 
@@ -202,20 +205,27 @@ export function CourierPage() {
           {km != null && <span>{km} km</span>}
         </div>
 
+        {/*
+          2-nuqta: marshrut RESTORANDAN MIJOZ KOORDINATASIGA
+          chiziladi — kuryer taomni olgach shu yo'ldan boradi.
+
+          MUHIM: mijoz koordinatasi bo'lsa manzil MATNI umuman
+          ishlatilmaydi. Avval "Uy — 18, xon. 6" kabi matn
+          xaritaga qidiruv sifatida ketardi va butunlay boshqa
+          shahardagi ko'chani ochib qo'yardi. Matn endi faqat
+          koordinata YO'Q bo'lgandagina zaxira sifatida ishlaydi.
+        */}
         <Point
           step="2"
           label="YETKAZISH"
           title={o.addressLabel || 'Manzil'}
           sub={isMine ? o.addressNote : null}
-          /*
-            Xaritaga TO'LIQ manzil beriladi, qisqartirilgani
-            emas: "Uy — улица Каховка, 16 к1" dagi "Uy —"
-            qismi qidiruvni chalg'itadi, shuning uchun uni
-            olib tashlaymiz.
-          */
-          address={isMine ? String(o.addressLabel || '').replace(/^[^—]*—\s*/, '') : null}
-          lat={isMine ? o.lat : null}
-          lng={isMine ? o.lng : null}
+          to={isMine ? {
+            lat: o.lat,
+            lng: o.lng,
+            address: String(o.addressLabel || '').replace(/^[^—]*—\s*/, ''),
+          } : null}
+          from={{ lat: o.restaurantLat, lng: o.restaurantLng }}
           phone={isMine ? o.customerPhone : null}
           person={isMine ? o.customerName : null}
           username={isMine ? o.customerUsername : null}
@@ -293,13 +303,12 @@ export function CourierPage() {
  * moto ustida, bir qo'li band. Har amal katta va aniq
  * bo'lishi kerak, qidirib o'tirmasin.
  */
-function Point({ step, label, title, sub, lat, lng, phone, person, username, locked, address }) {
+function Point({ step, label, title, sub, to, from, phone, person, username, locked }) {
   /*
-   * Navigatsiya uchun eng aniq ma'lumot: koordinata bo'lsa u,
-   * bo'lmasa to'liq manzil matni. `address` — mijoz kiritgan
-   * manzil, `title` esa qisqartirilgan ko'rinishi.
+   * `to`   — qayerga borish (koordinata, bo'lmasa manzil matni)
+   * `from` — qayerdan (berilmasa: kuryerning joriy joylashuvi)
    */
-  const nav = locked ? null : mapUrl(lat, lng, address || title);
+  const nav = locked ? null : navUrl(to || {}, from);
 
   return (
     <div className={`cp-point ${locked ? 'is-locked' : ''}`}>
@@ -335,11 +344,7 @@ function Point({ step, label, title, sub, lat, lng, phone, person, username, loc
         {/*
           Navigatsiya havolasi koordinatasiz ham yasaladi —
           manzil matni bo'yicha (maps.js da). Shuning uchun
-          shart `lat` emas, `nav` ning o'zi tekshiriladi.
-
-          Ilgari koordinatasiz buyurtmada tugma umuman
-          chiqmasdi va kuryer manzilni qo'lda ko'chirishga
-          majbur bo'lardi.
+          shart koordinata emas, `nav` ning o'zi tekshiriladi.
         */}
         {(nav || phone) && (
           <div className="cp-point__actions">
