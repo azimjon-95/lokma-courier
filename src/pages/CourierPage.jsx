@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../lib/api';
-import { navUrl, distanceKm, telUrl } from '../lib/maps';
+import {
+  googleMapsUrl,
+  yandexMapsUrl,
+  appleMapsUrl,
+  hasCoords,
+  distanceKm,
+  telUrl,
+} from '../lib/maps';
 import './CourierPage.css';
 
 const som = (n) => (n ?? 0).toLocaleString('ru-RU').replace(/,/g, ' ');
@@ -12,11 +19,32 @@ export function CourierPage() {
   const [accepting, setAccepting] = useState(false);
   const [showDeliverConfirm, setShowDeliverConfirm] = useState(false);
   const [delivering, setDelivering] = useState(false);
+  
+  const [mapTarget, setMapTarget] = useState(null);
+  const [courierLocation, setCourierLocation] = useState(null);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState(null);
 
   const load = useCallback(async () => {
     try {
       const res = await api.getInvite(token);
-      setState({ loading: false, view: res.view, order: res.order, error: null });
+
+      console.log(
+        '[COURIER ORDER]',
+        JSON.stringify(res.order, null, 2)
+      );
+
+      console.log('[CUSTOMER COORDS]', {
+        lat: res.order?.lat,
+        lng: res.order?.lng,
+      });
+      
+      setState({
+        loading: false,
+        view: res.view,
+        order: res.order,
+        error: null,
+      });
     } catch (e) {
       setState({ loading: false, view: null, order: null, error: e.message });
     }
@@ -111,6 +139,147 @@ export function CourierPage() {
   const o = state.order;
   const isMine = state.view === 'mine';
   const km = distanceKm(o.restaurantLat, o.restaurantLng, o.lat, o.lng);
+
+
+  const getCourierLocation = useCallback(() => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(
+          new Error(
+            'Bu qurilmada GPS/geolocation qo‘llab-quvvatlanmaydi.'
+          )
+        );
+        return;
+      }
+  
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+  
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            reject(
+              new Error(
+                'GPS koordinatalari olinmadi.'
+              )
+            );
+            return;
+          }
+  
+          resolve({
+            lat,
+            lng,
+          });
+        },
+        (error) => {
+          let message = 'GPS joylashuvingizni aniqlab bo‘lmadi.';
+  
+          if (error.code === error.PERMISSION_DENIED) {
+            message =
+              'GPS uchun ruxsat berilmagan. Brauzer sozlamalaridan Location/GPS ruxsatini yoqing.';
+          }
+  
+          if (error.code === error.POSITION_UNAVAILABLE) {
+            message =
+              'GPS joylashuvi hozircha mavjud emas.';
+          }
+  
+          if (error.code === error.TIMEOUT) {
+            message =
+              'GPS joylashuvini aniqlash vaqti tugadi.';
+          }
+  
+          reject(new Error(message));
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 5000,
+        }
+      );
+    });
+  }, []);
+
+  const handleOpenMaps = useCallback(
+  async (target) => {
+    if (!hasCoords(target?.lat, target?.lng)) {
+      setLocationError(
+        'Mijozning GPS koordinatalari mavjud emas. Manzil adresi orqali yo‘l ko‘rsatish bloklandi.'
+      );
+      return;
+    }
+
+    setMapTarget(target);
+    setLocationError(null);
+    setLocating(true);
+
+    try {
+      const location = await getCourierLocation();
+
+      setCourierLocation(location);
+    } catch (error) {
+      console.error('[COURIER GPS ERROR]', error);
+
+      setCourierLocation(null);
+      setLocationError(
+        error?.message ||
+          'Courier GPS joylashuvini aniqlab bo‘lmadi.'
+      );
+    } finally {
+      setLocating(false);
+    }
+  },
+  [getCourierLocation]
+  );
+
+  const openSelectedMap = useCallback(
+  (provider) => {
+    if (!mapTarget) return;
+
+    if (!hasCoords(mapTarget.lat, mapTarget.lng)) {
+      return;
+    }
+
+    let url = null;
+
+    if (provider === 'google') {
+      url = googleMapsUrl(
+        mapTarget,
+        courierLocation
+      );
+    }
+
+    if (provider === 'yandex') {
+      url = yandexMapsUrl(
+        mapTarget,
+        courierLocation
+      );
+    }
+
+    if (provider === 'apple') {
+      url = appleMapsUrl(
+        mapTarget,
+        courierLocation
+      );
+    }
+
+    if (!url) {
+      setLocationError(
+        'Xarita uchun kerakli koordinatalar mavjud emas.'
+      );
+      return;
+    }
+
+    window.open(
+      url,
+      '_blank',
+      'noopener,noreferrer'
+    );
+
+    setMapTarget(null);
+  },
+  [mapTarget, courierLocation]
+  );
 
   return (
     <div className="courier-page">
@@ -215,21 +384,25 @@ export function CourierPage() {
           shahardagi ko'chani ochib qo'yardi. Matn endi faqat
           koordinata YO'Q bo'lgandagina zaxira sifatida ishlaydi.
         */}
-        <Point
+       <Point
           step="2"
           label="YETKAZISH"
           title={o.addressLabel || 'Manzil'}
           sub={isMine ? o.addressNote : null}
-          to={isMine ? {
-            lat: o.lat,
-            lng: o.lng,
-            address: String(o.addressLabel || '').replace(/^[^—]*—\s*/, ''),
-          } : null}
-          from={{ lat: o.restaurantLat, lng: o.restaurantLng }}
+          to={
+            isMine
+              ? {
+                  lat: o.lat,
+                  lng: o.lng,
+                }
+              : null
+          }
+          from={null}
           phone={isMine ? o.customerPhone : null}
           person={isMine ? o.customerName : null}
           username={isMine ? o.customerUsername : null}
           locked={!isMine}
+          onNavigate={handleOpenMaps}
         />
       </div>
 
@@ -292,6 +465,19 @@ export function CourierPage() {
           </div>
         )}
       </div>
+
+      <MapChooserModal
+        open={Boolean(mapTarget)}
+        target={mapTarget}
+        courierLocation={courierLocation}
+        locating={locating}
+        error={locationError}
+        onClose={() => {
+          setMapTarget(null);
+          setLocationError(null);
+        }}
+        onSelect={openSelectedMap}
+      />
     </div>
   );
 }
@@ -303,12 +489,24 @@ export function CourierPage() {
  * moto ustida, bir qo'li band. Har amal katta va aniq
  * bo'lishi kerak, qidirib o'tirmasin.
  */
-function Point({ step, label, title, sub, to, from, phone, person, username, locked }) {
+function Point({
+  step,
+  label,
+  title,
+  sub,
+  to,
+  from,
+  phone,
+  person,
+  username,
+  locked,
+  onNavigate,
+}) {
   /*
    * `to`   — qayerga borish (koordinata, bo'lmasa manzil matni)
    * `from` — qayerdan (berilmasa: kuryerning joriy joylashuvi)
    */
-  const nav = locked ? null : navUrl(to || {}, from);
+  // const nav = locked ? null : navUrl(to || {}, from);
 
   return (
     <div className={`cp-point ${locked ? 'is-locked' : ''}`}>
@@ -346,12 +544,16 @@ function Point({ step, label, title, sub, to, from, phone, person, username, loc
           manzil matni bo'yicha (maps.js da). Shuning uchun
           shart koordinata emas, `nav` ning o'zi tekshiriladi.
         */}
-        {(nav || phone) && (
+       {((!locked && hasCoords(to?.lat, to?.lng)) || phone) && (
           <div className="cp-point__actions">
-            {nav && (
-              <a href={nav} target="_blank" rel="noreferrer" className="cp-act cp-act--map">
+            {!locked && hasCoords(to?.lat, to?.lng) && (
+              <button
+                type="button"
+                className="cp-act cp-act--map"
+                onClick={() => onNavigate?.(to)}
+              >
                 🧭 Yo‘l ko‘rsatish
-              </a>
+              </button>
             )}
             {phone && (
               <a href={telUrl(phone)} className="cp-act cp-act--call">
@@ -360,6 +562,155 @@ function Point({ step, label, title, sub, to, from, phone, person, username, loc
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+function MapChooserModal({
+  open,
+  target,
+  courierLocation,
+  locating,
+  error,
+  onClose,
+  onSelect,
+}) {
+  if (!open) {
+    return null;
+  }
+
+  const hasTarget = hasCoords(
+    target?.lat,
+    target?.lng
+  );
+
+  return (
+    <div
+      className="cp-map-modal__backdrop"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        className="cp-map-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cp-map-modal-title"
+        onClick={(event) => {
+          event.stopPropagation();
+        }}
+      >
+        <div className="cp-map-modal__header">
+          <div>
+            <h3 id="cp-map-modal-title">
+              Yo‘l ko‘rsatish
+            </h3>
+
+            <p>
+              Xarita ilovasini tanlang
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="cp-map-modal__close"
+            onClick={onClose}
+            aria-label="Yopish"
+          >
+            ×
+          </button>
+        </div>
+
+        {!hasTarget && (
+          <div className="cp-map-modal__error">
+            Mijozning GPS koordinatalari topilmadi.
+          </div>
+        )}
+
+        {hasTarget && (
+          <>
+            {locating && (
+              <div className="cp-map-modal__loading">
+                📍 Courier joylashuvi aniqlanmoqda...
+              </div>
+            )}
+
+            {!locating && courierLocation && (
+              <div className="cp-map-modal__success">
+                ✓ Courier GPS joylashuvi olindi
+              </div>
+            )}
+
+            {error && (
+              <div className="cp-map-modal__error">
+                {error}
+              </div>
+            )}
+
+            <div className="cp-map-modal__buttons">
+              <button
+                type="button"
+                className="cp-map-modal__option"
+                disabled={locating}
+                onClick={() => onSelect('yandex')}
+              >
+                <span className="cp-map-modal__icon">
+                  Я
+                </span>
+
+                <span>
+                  <strong>Yandex Maps</strong>
+                  <small>
+                    Yandex orqali yo‘l
+                  </small>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="cp-map-modal__option"
+                disabled={locating}
+                onClick={() => onSelect('google')}
+              >
+                <span className="cp-map-modal__icon">
+                  G
+                </span>
+
+                <span>
+                  <strong>Google Maps</strong>
+                  <small>
+                    Google orqali yo‘l
+                  </small>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="cp-map-modal__option"
+                disabled={locating}
+                onClick={() => onSelect('apple')}
+              >
+                <span className="cp-map-modal__icon">
+                  
+                </span>
+
+                <span>
+                  <strong>Apple Maps</strong>
+                  <small>
+                    Apple orqali yo‘l
+                  </small>
+                </span>
+              </button>
+            </div>
+          </>
+        )}
+
+        <button
+          type="button"
+          className="cp-map-modal__cancel"
+          onClick={onClose}
+        >
+          Bekor qilish
+        </button>
       </div>
     </div>
   );

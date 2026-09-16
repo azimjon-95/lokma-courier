@@ -454,3 +454,143 @@ body {
   font-size: 22px !important;
   color: var(--muted) !important;
 }
+
+
+
+.cp-map-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.cp-map-modal {
+  width: 100%;
+  max-width: 460px;
+  padding: 20px;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.cp-map-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.cp-map-modal__header h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.cp-map-modal__header p {
+  margin: 5px 0 0;
+  font-size: 14px;
+  opacity: 0.65;
+}
+
+.cp-map-modal__close {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border: 0;
+  border-radius: 50%;
+  background: #f1f1f1;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cp-map-modal__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cp-map-modal__option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cp-map-modal__option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cp-map-modal__option:active {
+  transform: scale(0.99);
+}
+
+.cp-map-modal__option strong {
+  display: block;
+  font-size: 16px;
+}
+
+.cp-map-modal__option small {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.cp-map-modal__icon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 42px;
+  border-radius: 12px;
+  background: #f3f3f3;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.cp-map-modal__loading,
+.cp-map-modal__success,
+.cp-map-modal__error {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.cp-map-modal__loading {
+  background: #f3f6fa;
+}
+
+.cp-map-modal__success {
+  background: #eef9f0;
+}
+
+.cp-map-modal__error {
+  background: #fff1f1;
+}
+
+.cp-map-modal__cancel {
+  width: 100%;
+  margin-top: 12px;
+  padding: 13px;
+  border: 0;
+  border-radius: 14px;
+  background: #f2f2f2;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}

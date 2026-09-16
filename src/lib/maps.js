@@ -1,77 +1,133 @@
-/*
- * ═══════════════════════════════════════════════════════════
- * XARITA HAVOLALARI — GOOGLE MAPS
- * ═══════════════════════════════════════════════════════════
- *
- * NIMA UCHUN GOOGLE, YANDEX EMAS:
- * Yandex O'zbekiston qishloqlari va yangi mahallalarini to'liq
- * qamrab olmaydi — kuryer manzilni topa olmay qolardi. Google
- * bu hududlarda ancha to'liq.
- *
- * NIMA UCHUN MANZIL MATNI EMAS, KOORDINATA:
- * "Uy — 18, xon. 6" kabi matnni xarita butunlay boshqa shaharda
- * topib berardi (Moskvadagi ko'chani ko'rsatgan holat bo'lgan).
- * Koordinata bo'lsa matn UMUMAN ishlatilmaydi — xarita aniq
- * nuqtaga boradi.
- *
- * Google Maps URL API hujjati:
- * https://developers.google.com/maps/documentation/urls/get-started
- */
-
-/** Koordinata haqiqiy sonmi (0 ham to'g'ri qiymat bo'lishi mumkin). */
 function isCoord(v) {
-  return Number.isFinite(Number(v)) && Number(v) !== 0;
+  if (v === null || v === undefined || v === '') return false;
+
+  const n = Number(v);
+
+  return Number.isFinite(n) && n !== 0;
 }
 
 export function hasCoords(lat, lng) {
   return isCoord(lat) && isCoord(lng);
 }
 
-/**
- * Navigatsiya havolasi — MARSHRUT chizib beradi (yo'l chizig'i bilan).
- *
- * @param {object} to    Manzil: { lat, lng, address }
- * @param {object} [from] Boshlanish nuqtasi: { lat, lng }.
- *   Berilmasa — Google foydalanuvchining JORIY joylashuvidan
- *   boshlab chizadi (kuryer uchun odatda shu kerak).
- *
- * Qaytaradi: URL yoki null (hech qanday ma'lumot bo'lmasa).
- */
-export function navUrl(to = {}, from = null) {
-  const params = new URLSearchParams({ api: '1', travelmode: 'driving' });
+function coordString(point) {
+  return `${Number(point.lat)},${Number(point.lng)}`;
+}
 
-  if (hasCoords(to.lat, to.lng)) {
-    // Aniq nuqta — matn qo'shilmaydi, aks holda qidiruv chalg'itadi
-    params.set('destination', `${Number(to.lat)},${Number(to.lng)}`);
-  } else if (to.address && String(to.address).trim()) {
-    // Koordinata yo'q (mijoz manzilni qo'lda yozgan) — matn bo'yicha
-    params.set('destination', String(to.address).trim());
-  } else {
+/**
+ * Google Maps route
+ *
+ * MUHIM:
+ * destination faqat LAT/LNG orqali beriladi.
+ * Address fallback YO'Q.
+ */
+export function googleMapsUrl(to = {}, from = null) {
+  if (!hasCoords(to.lat, to.lng)) {
     return null;
   }
 
+  const params = new URLSearchParams({
+    api: '1',
+    travelmode: 'driving',
+    destination: coordString(to),
+  });
+
   if (from && hasCoords(from.lat, from.lng)) {
-    params.set('origin', `${Number(from.lat)},${Number(from.lng)}`);
+    params.set('origin', coordString(from));
   }
 
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
-/** Ikki nuqta orasidagi masofa (taxminiy, km) — Haversine formulasi. */
+/**
+ * Yandex Maps route
+ *
+ * Yandex navigator uchun:
+ * fromLat,fromLng~toLat,toLng
+ */
+export function yandexMapsUrl(to = {}, from = null) {
+  if (!hasCoords(to.lat, to.lng)) {
+    return null;
+  }
+
+  const destination = coordString(to);
+
+  if (from && hasCoords(from.lat, from.lng)) {
+    const origin = coordString(from);
+
+    return (
+      `https://yandex.com/maps/?rtext=` +
+      `${encodeURIComponent(origin)}~${encodeURIComponent(destination)}` +
+      `&rtt=auto`
+    );
+  }
+
+  return (
+    `https://yandex.com/maps/?rtext=` +
+    `${encodeURIComponent(destination)}` +
+    `&rtt=auto`
+  );
+}
+
+/**
+ * Apple Maps route
+ */
+export function appleMapsUrl(to = {}, from = null) {
+  if (!hasCoords(to.lat, to.lng)) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    daddr: coordString(to),
+    dirflg: 'd',
+  });
+
+  if (from && hasCoords(from.lat, from.lng)) {
+    params.set('saddr', coordString(from));
+  }
+
+  return `https://maps.apple.com/?${params.toString()}`;
+}
+
+/**
+ * Eski kodda ishlatilgan nom.
+ * Agar boshqa joylarda navUrl() ishlatilayotgan bo'lsa,
+ * ularni buzmaslik uchun qoldiryapmiz.
+ *
+ * MUHIM: address fallback endi YO'Q.
+ */
+export function navUrl(to = {}, from = null) {
+  return googleMapsUrl(to, from);
+}
+
 export function distanceKm(lat1, lng1, lat2, lng2) {
-  // Ilgari `!lat1` tekshirilardi — bu 0 koordinatani ham rad etardi
-  if (!hasCoords(lat1, lng1) || !hasCoords(lat2, lng2)) return null;
+  if (!hasCoords(lat1, lng1) || !hasCoords(lat2, lng2)) {
+    return null;
+  }
+
+  const lat1Num = Number(lat1);
+  const lng1Num = Number(lng1);
+  const lat2Num = Number(lat2);
+  const lng2Num = Number(lng2);
+
   const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+
+  const dLat = ((lat2Num - lat1Num) * Math.PI) / 180;
+  const dLng = ((lng2Num - lng1Num) * Math.PI) / 180;
+
   const a =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    Math.cos((lat1Num * Math.PI) / 180) *
+      Math.cos((lat2Num * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
   return Math.round(R * c * 10) / 10;
 }
 
 export function telUrl(phone) {
   if (!phone) return null;
-  return `tel:${phone.replace(/[^\d+]/g, '')}`;
+
+  return `tel:${String(phone).replace(/[^\d+]/g, '')}`;
 }
