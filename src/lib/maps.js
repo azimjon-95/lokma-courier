@@ -62,11 +62,23 @@ export function yandexMapsUrl(to = {}, from = null) {
     );
   }
 
-  return (
-    `https://yandex.com/maps/?rtext=` +
-    `${encodeURIComponent(destination)}` +
-    `&rtt=auto`
-  );
+  /*
+   * GPS yo'q — marshrut chizib bo'lmaydi.
+   *
+   * `rtext` ga bitta nuqta berilsa Yandex marshrut qurish
+   * rejimida ochiladi va ikkinchi nuqtani so'rab turadi —
+   * kuryer uchun chalg'ituvchi. Shuning uchun shunchaki
+   * MANZIL NUQTASI ko'rsatiladi, kuryer o'zi "marshrut"
+   * tugmasini bosadi.
+   *
+   * DIQQAT: `ll` va `pt` da Yandex tartibi — LONGITUDE,LATITUDE
+   * (rtext dagidan teskari). Buni adashtirish manzilni butunlay
+   * boshqa joyga olib boradi.
+   */
+  const lon = Number(to.lng);
+  const lat = Number(to.lat);
+
+  return `https://yandex.com/maps/?ll=${lon},${lat}&z=17&pt=${lon},${lat},pm2rdm`;
 }
 
 /**
