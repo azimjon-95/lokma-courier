@@ -41,10 +41,22 @@ body {
   max-width: 480px;
   margin: 0 auto;
   min-height: 100vh;
-  padding: 16px 16px calc(100px + env(safe-area-inset-bottom, 0px));
+  /*
+   * Pastki panel `position: fixed` — kontent uning ostida
+   * qolib ketmasligi uchun joy qoldiriladi.
+   *
+   * 120px: tugma 56 + panel to'ldirmasi 24 + chegara + zaxira.
+   * Tasdiqlash oynasi ochilganda panel balandlashadi, shuning
+   * uchun pastdagi `.has-confirm` qoidasi joyni kengaytiradi.
+   */
+  padding: 16px 16px calc(120px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.courier-page.has-confirm {
+  padding-bottom: calc(210px + env(safe-area-inset-bottom, 0px));
 }
 
 .courier-page--centered {
@@ -71,21 +83,16 @@ body {
 .courier-page--centered p { color: var(--muted); margin: 0; max-width: 300px; }
 
 /* ===== Sarlavha ===== */
-.cp-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 4px 4px;
-}
-.cp-header__badge {
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: rgba(245, 166, 35, 0.15);
-  color: var(--brand-dark);
-  font-size: 13px; font-weight: 700;
-}
-.cp-header__total {
-  font-size: 20px; font-weight: 800;
-  color: var(--ink);
-}
+/*
+ * ESKI `.cp-header`, `.cp-header__badge`, `.cp-header__total`
+ * OLIB TASHLANDI.
+ *
+ * Ular sahifa qayta ishlanganda ishlatilmay qolgan, lekin CSS'da
+ * turib olgandi. `.cp-header` pastda QAYTA aniqlangani uchun
+ * eskisining `display: flex` i saqlanib qolar va sarlavha
+ * bo'laklarini (belgi + narx + km) BIR QATORGA tiqib, ekrandan
+ * chiqarib yuborardi. Haqiqiy ta'rif quyida, bitta joyda.
+ */
 
 /* ===== Kartalar ===== */
 .cp-card {
@@ -148,28 +155,47 @@ body {
 }
 
 /* ===== Pastki amal paneli ===== */
+/*
+ * ═══ PASTKI PANEL ═══
+ *
+ * Kuryer telefonni bir qo'lda ushlab turadi — asosiy amal
+ * har doim ko'rinib, barmoq yetadigan joyda bo'lishi kerak.
+ *
+ * Shaffof gradient o'rniga to'liq fon va yuqori chegara:
+ * ostidagi matn tugma orqasidan "sizib" ko'rinmasin.
+ */
 .cp-footer {
   position: fixed;
   left: 0; right: 0; bottom: 0;
   max-width: 480px;
   margin: 0 auto;
-  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(180deg, rgba(247,245,242,0) 0%, var(--canvas) 30%);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.06);
+  z-index: 20;
 }
 
+/*
+ * Tugma balandligi 56px — qo'lqopda ham aniq bosiladi
+ * (mobil uchun tavsiya etilgan eng kam 44px dan yuqori).
+ */
 .cp-btn {
   width: 100%;
+  min-height: 56px;
   padding: 16px;
   border-radius: 16px;
-  font-size: 16px; font-weight: 700;
-  transition: transform 0.1s;
+  font-size: 16.5px; font-weight: 700;
+  letter-spacing: -0.2px;
+  transition: transform 0.1s, box-shadow 0.15s;
 }
 .cp-btn:active { transform: scale(0.98); }
 .cp-btn--primary {
   background: var(--brand);
   color: #1A1200;
-  box-shadow: 0 6px 18px rgba(245, 166, 35, 0.35);
+  box-shadow: 0 4px 14px rgba(245, 166, 35, 0.3);
 }
+.cp-btn--primary:active { box-shadow: 0 2px 8px rgba(245, 166, 35, 0.25); }
 .cp-btn--primary:disabled { opacity: 0.6; }
 .cp-btn--ghost {
   background: var(--surface);
@@ -206,10 +232,18 @@ body {
   background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
+/*
+ * Belgi va buyurtma raqami. `flex-wrap` — uzun belgi matni
+ * ("Sizga biriktirilgan") tor ekranda pastga tushsin, raqamni
+ * siqib chiqarmasin.
+ */
 .cp-header__top {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; margin-bottom: 12px;
+  gap: 8px; margin-bottom: 12px;
+  flex-wrap: wrap;
 }
+.cp-badge { flex: 0 1 auto; }
+.cp-code { flex: 0 0 auto; }
 .cp-badge {
   padding: 5px 11px;
   border-radius: 999px;
@@ -227,9 +261,19 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * Narx va masofa. `min-width: 0` va `clamp()` — tor ekranda
+ * ham chiqib ketmasligi uchun: 30px shrift 320px kenglikdagi
+ * telefonda "15 000 so'm" ni sig'dira olmasdi.
+ */
 .cp-earn {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 14px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.cp-earn__main {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 .cp-earn__label {
   display: block;
@@ -238,9 +282,15 @@ body {
   margin-bottom: 1px;
 }
 .cp-earn__main b {
-  font-size: 30px; font-weight: 800; line-height: 1;
+  display: block;
+  /* Ekran kengligiga qarab 22–30px oralig'ida */
+  font-size: clamp(22px, 7.5vw, 30px);
+  font-weight: 800; line-height: 1.05;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cp-earn__main i {
   margin-left: 5px;
@@ -248,10 +298,12 @@ body {
   color: var(--muted);
 }
 .cp-earn__km {
-  flex: none;
-  padding: 9px 13px;
+  flex: 0 0 auto;
+  min-width: 62px;
+  padding: 8px 12px;
   border-radius: 13px;
   background: var(--canvas);
+  border: 1px solid var(--line);
   text-align: center;
 }
 .cp-earn__km span {

@@ -466,7 +466,12 @@ export function CourierPage() {
   );
 
   return (
-    <div className="courier-page">
+    /*
+      Tasdiqlash oynasi ochilganda pastki panel balandlashadi —
+      sahifa pastidagi joy ham kengayadi, aks holda oxirgi karta
+      panel ostida qolib ketardi.
+    */
+    <div className={`courier-page ${showDeliverConfirm ? 'has-confirm' : ''}`}>
 
       <header className="cp-header">
         <div className="cp-header__top">
