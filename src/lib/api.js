@@ -1,3 +1,4 @@
+import { resilientFetch } from './resilientFetch.js';
 /**
  * Kuryer portali API klienti — BOSQICH 1 (2026-08, ulashish
  * orqali, kuryerlar reyestrisiz).
@@ -30,7 +31,8 @@ function saveSecret(token, secret) {
 }
 
 async function request(path, opts = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  // Vaqt chegarasi + o'qishda qayta urinish (resilientFetch.js)
+  const res = await resilientFetch(`${API_BASE}${path}`, {
     ...opts,
     headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
   });
