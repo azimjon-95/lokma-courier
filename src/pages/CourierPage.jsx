@@ -703,14 +703,13 @@ export function CourierPage() {
           </button>
         ) : (
           <div className="cp-confirm">
-            <p>
-              {o.isPaid
-                ? 'Buyurtmani topshirdingizmi?'
-                : `${som(
-                    o.collectAmount ||
-                      o.total
-                  )} so‘m oldingizmi?`}
-            </p>
+                        {/*
+              Pul haqida savol YO'Q. Avval naqd buyurtmada "X so'm oldingizmi?" deb so'rardi —
+              bu aslida "to'lov olindi" tugmasi edi. Endi to'lov buyurtma yakunlanganda
+              server tomonidan AVTOMATIK qayd etiladi. Olinadigan summa tepadagi
+              kartada ("Mijozdan naqd olinadi") ko'rinib turadi.
+            */}
+            <p>Buyurtmani topshirdingizmi?</p>
 
             <div className="cp-confirm__row">
               <button
