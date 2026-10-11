@@ -646,3 +646,22 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
+/* ── Mijozga ko'rinish: profil va jonli joylashuv ── */
+.cs { margin: 10px 16px 0; display: flex; flex-direction: column; gap: 8px; }
+.cs__gps { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; font-size: 13px; font-weight: 600; background: #FFF4E5; color: #8A4B00; }
+.cs__gps.is-live { background: #E7F7EE; color: #12733F; }
+.cs__gps.is-denied, .cs__gps.is-unsupported { background: #FDE9E8; color: #A3261F; }
+.cs__dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.cs__gps.is-live .cs__dot { animation: cs-blink 1.4s ease-in-out infinite; }
+@keyframes cs-blink { 50% { opacity: 0.3; } }
+.cs__me { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-radius: 14px; background: #F4F4F1; font-size: 13.5px; font-weight: 600; }
+.cs__me button { font-size: 13px; color: #2E6CF6; font-weight: 600; }
+.cs__form { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px; background: #fff; border: 1.5px solid #E8E8E4; }
+.cs__form b { font-size: 14px; }
+.cs__form input { padding: 12px 14px; border-radius: 12px; border: 1.5px solid #E2E2DE; font-size: 16px; }
+.cs__veh { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.cs__veh button { padding: 10px; border-radius: 12px; border: 1.5px solid #E2E2DE; font-size: 13.5px; font-weight: 600; }
+.cs__veh button.is-on { border-color: #F26A1B; background: #FFF1E8; color: #C2410C; }
+.cs__save { padding: 13px; border-radius: 14px; background: #F26A1B; color: #fff; font-weight: 700; font-size: 15px; }
+.cs__save:disabled { opacity: 0.5; }
+.cs__err { margin: 0; color: #C0352E; font-size: 13px; }

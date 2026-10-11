@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { CourierShare } from './CourierShare';
 import {
   googleMapsUrl,
   yandexMapsUrl,
@@ -112,18 +113,7 @@ export function CourierPage() {
     try {
       const res = await api.getInvite(token);
 
-      console.log(
-        '[COURIER ORDER]',
-        JSON.stringify(res.order, null, 2)
-      );
-
       const customerCoords = getCustomerCoords(res.order);
-
-      console.log('[CUSTOMER COORDS]', {
-        lat: customerCoords?.lat,
-        lng: customerCoords?.lng,
-        found: Boolean(customerCoords),
-      });
 
       setState({
         loading: false,
@@ -472,6 +462,9 @@ export function CourierPage() {
       panel ostida qolib ketardi.
     */
     <div className={`courier-page ${showDeliverConfirm ? 'has-confirm' : ''}`}>
+
+      {/* Qabul qilgach: ism/telefon/transport + jonli joylashuv (mijoz kuzatuvi uchun) */}
+      {isMine && <CourierShare token={token} />}
 
       <header className="cp-header">
         <div className="cp-header__top">

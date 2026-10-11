@@ -65,6 +65,18 @@ export const api = {
   },
 
   /** "Topshirdim" — saqlangan secret bilan. */
+  // Mijoz kuzatuvidagi kuryer kartasi: ism, telefon, transport (server: courier-portal/:token/profile)
+  profile: (token, data) => {
+    const secret = getSavedSecret(token);
+    return request(`/courier-portal/${token}/profile`, { method: 'POST', body: JSON.stringify({ secret, ...data }) });
+  },
+
+  // Jonli joylashuv (server: courier-portal/:token/location) — mijoz kuryerni xaritada ko'radi
+  location: (token, coords) => {
+    const secret = getSavedSecret(token);
+    return request(`/courier-portal/${token}/location`, { method: 'POST', body: JSON.stringify({ secret, ...coords }) });
+  },
+
   deliver: (token) => {
     const secret = getSavedSecret(token);
     return request(`/courier-portal/${token}/deliver`, {
@@ -73,3 +85,12 @@ export const api = {
     });
   },
 };
+
+/* Kuryer o'z ma'lumotini BIR MARTA kiritadi — keyingi buyurtmalarda avtomatik */
+const PROFILE_KEY = 'lokma_courier_profile';
+export function getSavedProfile() {
+  try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch { return null; }
+}
+export function saveProfile(p) {
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); } catch { /* jim */ }
+}
